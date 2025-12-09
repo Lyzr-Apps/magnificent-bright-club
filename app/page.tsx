@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { MessageCircle, Plus, Send, Loader2, Copy, Check, Upload, X, File, AlertCircle } from 'lucide-react'
+import { MessageCircle, Plus, Send, Loader2, Copy, Check, Upload, X, File, AlertCircle, Mail } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 interface Message {
   id: string
@@ -40,6 +41,10 @@ export default function HomePage() {
   const [documents, setDocuments] = useState<Document[]>([])
   const [uploadingFile, setUploadingFile] = useState(false)
   const [showKB, setShowKB] = useState(false)
+  const [showEmailDialog, setShowEmailDialog] = useState(false)
+  const [recipientEmail, setRecipientEmail] = useState('')
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -239,6 +244,59 @@ export default function HomePage() {
     return date.toLocaleDateString()
   }
 
+  const generateConversationSummary = () => {
+    if (!currentConversation || currentConversation.messages.length === 0) {
+      return 'No conversation to summarize'
+    }
+
+    const messages = currentConversation.messages
+      .map(msg => `${msg.sender === 'user' ? 'You' : 'Assistant'}: ${msg.content}`)
+      .join('\n\n')
+
+    return `Conversation: ${currentConversation.title}\nDate: ${new Date().toLocaleString()}\n\n${messages}`
+  }
+
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!recipientEmail.trim() || !currentConversation || currentConversation.messages.length === 0) {
+      setEmailStatus({ type: 'error', message: 'Please enter an email address and have an active conversation' })
+      return
+    }
+
+    setSendingEmail(true)
+    setEmailStatus(null)
+
+    try {
+      const conversationSummary = generateConversationSummary()
+
+      const response = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Please send an email to ${recipientEmail} with the following conversation summary. Make the email professional and well-formatted:\n\n${conversationSummary}`,
+          agent_id: AGENT_ID,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setEmailStatus({ type: 'success', message: 'Email sent successfully!' })
+        setRecipientEmail('')
+        setTimeout(() => {
+          setShowEmailDialog(false)
+          setEmailStatus(null)
+        }, 2000)
+      } else {
+        setEmailStatus({ type: 'error', message: 'Failed to send email. Please try again.' })
+      }
+    } catch (error) {
+      setEmailStatus({ type: 'error', message: 'Error sending email. Please try again.' })
+    } finally {
+      setSendingEmail(false)
+    }
+  }
+
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Sidebar */}
@@ -393,6 +451,16 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+          <Button
+            onClick={() => setShowEmailDialog(true)}
+            disabled={!currentConversation || currentConversation.messages.length === 0}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Mail className="w-4 h-4" />
+            Share via Email
+          </Button>
         </div>
 
         {/* Chat Messages */}
@@ -519,6 +587,81 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Email Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Conversation via Email</DialogTitle>
+            <DialogDescription>
+              Send a summary of this conversation to your friend
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSendEmail} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-slate-900">
+                Recipient Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="friend@example.com"
+                value={recipientEmail}
+                onChange={e => setRecipientEmail(e.target.value)}
+                disabled={sendingEmail}
+                className="border-slate-300 focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            {emailStatus && (
+              <Alert className={emailStatus.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
+                <AlertCircle className={`h-4 w-4 ${emailStatus.type === 'success' ? 'text-green-600' : 'text-red-600'}`} />
+                <AlertDescription className={emailStatus.type === 'success' ? 'text-green-800' : 'text-red-800'}>
+                  {emailStatus.message}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowEmailDialog(false)
+                  setEmailStatus(null)
+                  setRecipientEmail('')
+                }}
+                disabled={sendingEmail}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={sendingEmail || !recipientEmail.trim()}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {sendingEmail ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4 mr-2" />
+                    Send Email
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <p className="text-xs text-slate-500 text-center">
+              The conversation summary will be formatted and sent as a professional email
+            </p>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
