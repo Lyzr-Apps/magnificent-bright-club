@@ -48,7 +48,7 @@ export default function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const AGENT_ID = '693837ffe6ce9b78c389dcc2'
+  const AGENT_ID = '69383c22a7a2106e9680ac94'
   const RAG_ID = '693837ef0a75a3174182108b'
 
   useEffect(() => {
@@ -269,11 +269,17 @@ export default function HomePage() {
     try {
       const conversationSummary = generateConversationSummary()
 
+      const emailPrompt = `Send an email to ${recipientEmail} with the subject line "Conversation Summary" and the following message body:
+
+${conversationSummary}
+
+Format the email professionally with clear paragraphs and proper spacing.`
+
       const response = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `Please send an email to ${recipientEmail} with the following conversation summary. Make the email professional and well-formatted:\n\n${conversationSummary}`,
+          message: emailPrompt,
           agent_id: AGENT_ID,
         }),
       })

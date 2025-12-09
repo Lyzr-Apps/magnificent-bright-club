@@ -35,21 +35,29 @@
   },
   "agents": [
     {
-      "agent_id": "693837ffe6ce9b78c389dcc2",
+      "agent_id": "69383c22a7a2106e9680ac94",
       "node_id": "chat_agent",
       "name": "Chat Agent",
-      "description": "Conversational assistant with knowledge base integration that responds to user queries, maintains context across messages, and references uploaded documents for accurate, contextual responses",
-      "agent_role": "Conversational Assistant with Knowledge Base Access",
-      "agent_goal": "Provide helpful, accurate, and contextual responses by leveraging both conversation history and knowledge base documents while maintaining natural dialogue flow",
-      "agent_instructions": "You are a friendly and knowledgeable conversational assistant with access to a knowledge base of documents and references. Your primary role is to listen carefully to user messages, check the knowledge base for relevant information, provide helpful accurate and relevant responses based on conversation context and knowledge base content, maintain conversation context, be natural and conversational, clearly cite or reference knowledge base documents, ask clarifying questions when needed, and provide structured responses with clear formatting.",
+      "description": "Conversational assistant with knowledge base integration that responds to user queries, maintains context across messages, references uploaded documents, and sends emails with conversation summaries",
+      "agent_role": "Conversational Assistant with Knowledge Base Access and Email Capability",
+      "agent_goal": "Provide helpful, accurate, and contextual responses by leveraging both conversation history and knowledge base documents while maintaining natural dialogue flow, and send professional emails with conversation summaries when requested",
+      "agent_instructions": "You are a friendly and knowledgeable conversational assistant with access to a knowledge base of documents and references, plus the ability to send professional emails via Gmail. Your primary role is to listen carefully to user messages, check the knowledge base for relevant information, provide helpful accurate and relevant responses based on conversation context and knowledge base content, maintain conversation context, be natural and conversational, clearly cite or reference knowledge base documents, send professional emails when requested using the Gmail tool, ask clarifying questions when needed, and provide structured responses with clear formatting.",
       "provider_id": "OpenAI",
       "model": "gpt-4o",
       "temperature": 0.7,
       "top_p": 0.95,
-      "features": ["MEMORY", "KNOWLEDGE_BASE"],
+      "features": ["MEMORY", "KNOWLEDGE_BASE", "EMAIL"],
       "has_knowledge_base": true,
       "rag_id": "693837ef0a75a3174182108b",
       "rag_name": "chatbotknowledgebasexayj",
+      "tool_configs": [
+        {
+          "tool_name": "gmail",
+          "tool_source": "composio",
+          "action_names": ["GMAIL_SEND_EMAIL"],
+          "persist_auth": false
+        }
+      ],
       "position": { "x": 500, "y": 300 },
       "created_at": "2025-12-09T00:00:00Z"
     }
