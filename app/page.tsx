@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { MessageCircle, Plus, Send, Loader2, Copy, Check } from 'lucide-react'
+import { MessageCircle, Plus, Send, Loader2, Copy, Check, Upload, X, File, AlertCircle } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface Message {
   id: string
@@ -21,6 +22,14 @@ interface Conversation {
   createdAt: Date
 }
 
+interface Document {
+  id: string
+  name: string
+  uploadedAt: Date
+  status: 'uploading' | 'success' | 'error'
+  error?: string
+}
+
 export default function HomePage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null)
@@ -28,9 +37,14 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [documents, setDocuments] = useState<Document[]>([])
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const [showKB, setShowKB] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const AGENT_ID = '6938377d1f3e985c1e365a16'
+  const AGENT_ID = '693837ffe6ce9b78c389dcc2'
+  const RAG_ID = '693837ef0a75a3174182108b'
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -45,6 +59,80 @@ export default function HomePage() {
     }
     setConversations([newConv, ...conversations])
     setCurrentConversation(newConv)
+  }
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const docId = Date.now().toString()
+    const newDoc: Document = {
+      id: docId,
+      name: file.name,
+      uploadedAt: new Date(),
+      status: 'uploading',
+    }
+    setDocuments([newDoc, ...documents])
+    setUploadingFile(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('ragId', RAG_ID)
+
+      const response = await fetch('/api/rag', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await response.json()
+
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === docId
+            ? { ...doc, status: 'success' }
+            : doc
+        )
+      )
+    } catch (error) {
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === docId
+            ? { ...doc, status: 'error', error: 'Failed to upload document' }
+            : doc
+        )
+      )
+    } finally {
+      setUploadingFile(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  const deleteDocument = async (docName: string, docId: string) => {
+    try {
+      const response = await fetch('/api/rag', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ragId: RAG_ID,
+          documents: [docName],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Delete failed')
+      }
+
+      setDocuments(prev => prev.filter(doc => doc.id !== docId))
+    } catch (error) {
+      console.error('Delete error:', error)
+    }
   }
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -157,9 +245,9 @@ export default function HomePage() {
       <div
         className={`${
           sidebarOpen ? 'w-64' : 'w-0'
-        } bg-white border-r border-slate-200 transition-all duration-300 flex flex-col shadow-sm`}
+        } bg-white border-r border-slate-200 transition-all duration-300 flex flex-col shadow-sm overflow-hidden`}
       >
-        <div className="p-4 border-b border-slate-200">
+        <div className="p-4 border-b border-slate-200 space-y-2">
           <Button
             onClick={createNewConversation}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
@@ -167,34 +255,104 @@ export default function HomePage() {
             <Plus className="w-4 h-4 mr-2" />
             New Chat
           </Button>
+          <Button
+            onClick={() => setShowKB(!showKB)}
+            variant={showKB ? 'default' : 'outline'}
+            className="w-full"
+          >
+            <File className="w-4 h-4 mr-2" />
+            Knowledge Base
+          </Button>
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="p-2 space-y-2">
-            {conversations.map(conv => (
-              <div
-                key={conv.id}
-                onClick={() => setCurrentConversation(conv)}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                  currentConversation?.id === conv.id
-                    ? 'bg-blue-100 border-l-4 border-blue-600'
-                    : 'hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-start gap-2">
-                  <MessageCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
-                      {conv.title}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      {formatTime(conv.createdAt)}
-                    </p>
-                  </div>
+          {showKB ? (
+            <div className="p-3 space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-600 block mb-2">
+                  Documents
+                </label>
+                <div className="space-y-2">
+                  {documents.length === 0 ? (
+                    <p className="text-xs text-slate-500">No documents uploaded</p>
+                  ) : (
+                    documents.map(doc => (
+                      <div
+                        key={doc.id}
+                        className="flex items-start gap-2 p-2 bg-slate-50 rounded border border-slate-200"
+                      >
+                        <File className="w-3 h-3 text-slate-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-900 truncate">
+                            {doc.name}
+                          </p>
+                          {doc.status === 'uploading' && (
+                            <p className="text-xs text-slate-500">Uploading...</p>
+                          )}
+                          {doc.status === 'success' && (
+                            <p className="text-xs text-green-600">Uploaded</p>
+                          )}
+                          {doc.status === 'error' && (
+                            <p className="text-xs text-red-600">{doc.error}</p>
+                          )}
+                        </div>
+                        {doc.status !== 'uploading' && (
+                          <button
+                            onClick={() => deleteDocument(doc.name, doc.id)}
+                            className="text-slate-400 hover:text-red-500"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile}
+                variant="outline"
+                className="w-full text-sm"
+              >
+                <Upload className="w-3 h-3 mr-1" />
+                {uploadingFile ? 'Uploading...' : 'Upload Document'}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.txt,.doc,.docx,.md"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+          ) : (
+            <div className="p-2 space-y-2">
+              {conversations.map(conv => (
+                <div
+                  key={conv.id}
+                  onClick={() => setCurrentConversation(conv)}
+                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                    currentConversation?.id === conv.id
+                      ? 'bg-blue-100 border-l-4 border-blue-600'
+                      : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <MessageCircle className="w-4 h-4 text-slate-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {conv.title}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {formatTime(conv.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </ScrollArea>
 
         <div className="p-2 border-t border-slate-200">
@@ -224,7 +382,15 @@ export default function HomePage() {
             )}
             <div>
               <h1 className="text-xl font-semibold text-slate-900">Knowledge Base Chatbot</h1>
-              <p className="text-sm text-slate-500">Your AI assistant</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-slate-500">Your AI assistant</p>
+                {documents.length > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 border border-blue-200">
+                    <File className="w-3 h-3 text-blue-600" />
+                    <span className="text-xs text-blue-600 font-medium">{documents.length} document{documents.length !== 1 ? 's' : ''}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>

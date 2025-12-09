@@ -35,24 +35,32 @@
   },
   "agents": [
     {
-      "agent_id": "6938377d1f3e985c1e365a16",
+      "agent_id": "693837ffe6ce9b78c389dcc2",
       "node_id": "chat_agent",
       "name": "Chat Agent",
-      "description": "Conversational assistant that responds to user queries, maintains context across messages, and provides helpful, accurate responses in a natural dialogue format",
-      "agent_role": "Conversational Assistant",
-      "agent_goal": "Provide helpful, accurate, and natural responses to user queries while maintaining conversation context",
-      "agent_instructions": "You are a friendly and knowledgeable conversational assistant. Your primary role is to listen carefully to user messages and understand their intent, provide helpful accurate and relevant responses, maintain conversation context to provide coherent dialogue, be natural and conversational in your tone, ask clarifying questions when needed, and provide structured responses with clear formatting when discussing complex topics.",
+      "description": "Conversational assistant with knowledge base integration that responds to user queries, maintains context across messages, and references uploaded documents for accurate, contextual responses",
+      "agent_role": "Conversational Assistant with Knowledge Base Access",
+      "agent_goal": "Provide helpful, accurate, and contextual responses by leveraging both conversation history and knowledge base documents while maintaining natural dialogue flow",
+      "agent_instructions": "You are a friendly and knowledgeable conversational assistant with access to a knowledge base of documents and references. Your primary role is to listen carefully to user messages, check the knowledge base for relevant information, provide helpful accurate and relevant responses based on conversation context and knowledge base content, maintain conversation context, be natural and conversational, clearly cite or reference knowledge base documents, ask clarifying questions when needed, and provide structured responses with clear formatting.",
       "provider_id": "OpenAI",
       "model": "gpt-4o",
       "temperature": 0.7,
       "top_p": 0.95,
-      "features": ["MEMORY"],
-      "has_knowledge_base": false,
-      "rag_id": null,
-      "rag_name": null,
+      "features": ["MEMORY", "KNOWLEDGE_BASE"],
+      "has_knowledge_base": true,
+      "rag_id": "693837ef0a75a3174182108b",
+      "rag_name": "chatbotknowledgebasexayj",
       "position": { "x": 500, "y": 300 },
       "created_at": "2025-12-09T00:00:00Z"
     }
   ],
-  "knowledge_bases": []
+  "knowledge_bases": [
+    {
+      "rag_id": "693837ef0a75a3174182108b",
+      "rag_name": "chatbotknowledgebasexayj",
+      "description": "Knowledge base for the chatbot to query and reference documents, PDFs, and text files for enhanced contextual responses",
+      "linked_agent_ids": ["693837ffe6ce9b78c389dcc2"],
+      "created_at": "2025-12-09T00:00:00Z"
+    }
+  ]
 }
