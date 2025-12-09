@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "updated_at": "2025-12-09T00:00:00Z",
+  "workflow": {
+    "nodes": [
+      {
+        "id": "input",
+        "type": "input",
+        "label": "User Message",
+        "nodeCategory": "input",
+        "description": "User enters a message in the chat interface",
+        "position": { "x": 100, "y": 300 }
+      },
+      {
+        "id": "chat_agent",
+        "type": "agent",
+        "label": "Chat Agent",
+        "nodeCategory": "agent",
+        "description": "Conversational assistant that maintains context and provides responses",
+        "position": { "x": 500, "y": 300 }
+      },
+      {
+        "id": "output",
+        "type": "end",
+        "label": "Response Output",
+        "nodeCategory": "end",
+        "description": "AI response displayed in chat interface",
+        "position": { "x": 900, "y": 300 }
+      }
+    ],
+    "edges": [
+      { "source": "input", "target": "chat_agent", "label": "Send message" },
+      { "source": "chat_agent", "target": "output", "label": "Return response" }
+    ]
+  },
+  "agents": [
+    {
+      "agent_id": "6938377d1f3e985c1e365a16",
+      "node_id": "chat_agent",
+      "name": "Chat Agent",
+      "description": "Conversational assistant that responds to user queries, maintains context across messages, and provides helpful, accurate responses in a natural dialogue format",
+      "agent_role": "Conversational Assistant",
+      "agent_goal": "Provide helpful, accurate, and natural responses to user queries while maintaining conversation context",
+      "agent_instructions": "You are a friendly and knowledgeable conversational assistant. Your primary role is to listen carefully to user messages and understand their intent, provide helpful accurate and relevant responses, maintain conversation context to provide coherent dialogue, be natural and conversational in your tone, ask clarifying questions when needed, and provide structured responses with clear formatting when discussing complex topics.",
+      "provider_id": "OpenAI",
+      "model": "gpt-4o",
+      "temperature": 0.7,
+      "top_p": 0.95,
+      "features": ["MEMORY"],
+      "has_knowledge_base": false,
+      "rag_id": null,
+      "rag_name": null,
+      "position": { "x": 500, "y": 300 },
+      "created_at": "2025-12-09T00:00:00Z"
+    }
+  ],
+  "knowledge_bases": []
+}
